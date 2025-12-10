@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Leave Update | Smart Leave Assistant{% endblock %}
+
+{% block content %}
+<div class="min-h-[60vh] flex items-center justify-center">
+  <div class="glass p-8 rounded-lg text-center" data-aos="zoom-in">
+    {% if status == 'Approved' %}
+      <lottie-player src="https://assets9.lottiefiles.com/packages/lf20_jbrw3hcz.json" background="transparent" speed="1" style="width:220px; height:220px;" autoplay></lottie-player>
+      <h2 class="text-2xl font-semibold text-emerald-300">Leave Approved</h2>
+      <p class="text-slate-300 mt-2">Hi {{ user.name }}, your leave from <strong>{{ leave.start_date }}</strong> to <strong>{{ leave.end_date }}</strong> has been approved.</p>
+    {% else %}
+      <lottie-player src="https://assets9.lottiefiles.com/packages/lf20_tmlbposm.json" background="transparent" speed="1" style="width:220px; height:220px;" autoplay></lottie-player>
+      <h2 class="text-2xl font-semibold text-rose-300">Leave Rejected</h2>
+      <p class="text-slate-300 mt-2">Hi {{ user.name }}, your leave from <strong>{{ leave.start_date }}</strong> to <strong>{{ leave.end_date }}</strong> has been rejected.</p>
+    {% endif %}
+
+    <div class="mt-6">
+      <a href="{{ url_for('dashboard') }}" class="px-4 py-2 rounded-md bg-gradient-to-r from-primary1 to-primary2 text-white">Go to Dashboard</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

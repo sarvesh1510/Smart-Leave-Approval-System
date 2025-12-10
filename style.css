@@ -1,0 +1,70 @@
+/* --- Fully dark custom dropdown style --- */
+select,
+select.custom-select {
+  background-color: #0b1f2d !important;
+  color: #e2e8f0 !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: 0.375rem;
+  padding: 0.5rem 0.75rem;
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  color-scheme: dark;
+  transition: all 0.2s ease-in-out;
+  cursor: pointer;
+  box-shadow: none !important;
+}
+
+/* Fix focus + active states */
+select:focus,
+select:active {
+  outline: none !important;
+  border-color: #8b5cf6 !important;
+  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.3) !important;
+  background-color: #0b1f2d !important;
+}
+
+/* Ensure options stay dark */
+select option {
+  background-color: #0b1f2d !important;
+  color: #e2e8f0 !important;
+}
+
+/* Optional darker hover/focus for supported browsers */
+select option:hover,
+select option:focus,
+select option:checked {
+  background-color: #1e293b !important;
+  color: #ffffff !important;
+}
+
+/* Remove weird browser arrows */
+select::-ms-expand {
+  display: none;
+}
+select::-webkit-inner-spin-button,
+select::-webkit-outer-spin-button {
+  -webkit-appearance: none !important;
+  margin: 0 !important;
+}
+
+/* Fix blue border highlight in Chrome/Edge */
+select::-webkit-focus-ring-color {
+  color: transparent !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* Optional: custom arrow wrapper if using <i class="fa-chevron-down"> */
+.select-wrapper {
+  position: relative;
+  display: inline-block;
+}
+.select-wrapper i.fa-chevron-down {
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #94a3b8;
+  pointer-events: none;
+}

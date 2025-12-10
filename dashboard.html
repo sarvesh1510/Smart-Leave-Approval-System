@@ -1,0 +1,286 @@
+{% extends "base.html" %}
+{% block title %}Dashboard | Smart Leave Assistant{% endblock %}
+
+{% block content %}
+<section class="pb-10">
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+    <!-- Left: Overview cards -->
+    <div class="lg:col-span-1 space-y-4">
+      <div class="glass p-5 rounded-lg" data-aos="fade-up">
+        <div class="flex items-center justify-between">
+          <div>
+            <div class="text-xs text-slate-400">Welcome back</div>
+            <div class="text-lg font-semibold text-white">{{ user.name }}</div>
+            <div class="text-xs text-slate-400">{{ user.department or 'N/A' }} · {{ user.role }}</div>
+          </div>
+
+          <!-- Admin shortcut -->
+          {% if user.role == 'Admin' %}
+          <a href="{{ url_for('admin_dashboard') }}" class="inline-flex items-center gap-2 px-3 py-2 rounded-md bg-gradient-to-r from-indigo-500 to-purple-500 text-white">
+            <i class="fa-solid fa-gear"></i> Admin
+          </a>
+          {% else %}
+          <a href="{{ url_for('apply_leave') }}" class="inline-flex items-center gap-2 px-3 py-2 rounded-md bg-gradient-to-r from-primary1 to-primary2 text-white">
+            <i class="fa-solid fa-plus"></i> Apply
+          </a>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Summary -->
+      <div class="glass p-4 rounded-lg" data-aos="fade-up" data-aos-delay="80">
+        <div class="flex items-center justify-between mb-3">
+          <div class="text-sm text-slate-300">Leave summary</div>
+          <div class="text-xs text-slate-400">Last 6 months</div>
+        </div>
+        <div class="grid grid-cols-3 gap-3">
+          <div class="p-3 rounded-lg bg-[rgba(255,255,255,0.02)] text-center">
+            <div class="text-xs text-slate-400">Total</div>
+            <div class="text-lg font-semibold text-white">{{ leaves|length }}</div>
+          </div>
+          <div class="p-3 rounded-lg bg-[rgba(255,255,255,0.02)] text-center">
+            <div class="text-xs text-slate-400">Approved</div>
+            <div class="text-lg font-semibold text-emerald-400">{{ leaves|selectattr('status','equalto','Approved')|list|length }}</div>
+          </div>
+          <div class="p-3 rounded-lg bg-[rgba(255,255,255,0.02)] text-center">
+            <div class="text-xs text-slate-400">Pending</div>
+            <div class="text-lg font-semibold text-amber-400">{{ leaves|selectattr('status','equalto','Pending')|list|length }}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick actions -->
+      <div class="glass p-4 rounded-lg" data-aos="fade-up" data-aos-delay="160">
+  <div class="text-sm text-slate-300 mb-4">Quick Actions</div>
+  <div class="grid grid-cols-2 gap-3">
+
+    {% if user.role != 'Admin' %}
+<a href="{{ url_for('apply_leave') }}"
+   class="group flex flex-col items-center gap-2 p-3 rounded-lg 
+          bg-[rgba(255,255,255,0.02)] hover:bg-[rgba(255,255,255,0.06)] 
+          transition shadow cursor-pointer">
+   <i class="fa-solid fa-calendar-plus text-primary2 text-xl group-hover:scale-110 transition"></i>
+   <span class="text-xs text-slate-300">Apply Leave</span>
+</a>
+{% endif %}
+
+    <a href="{{ url_for('reports') }}"
+      class="group flex flex-col items-center gap-2 p-3 rounded-lg 
+      bg-[rgba(255,255,255,0.02)] hover:bg-[rgba(255,255,255,0.06)] 
+      transition shadow cursor-pointer">
+      <i class="fa-solid fa-chart-line text-amber-300 text-xl group-hover:scale-110 transition"></i>
+      <span class="text-xs text-slate-300">Reports</span>
+    </a>
+
+  </div>
+</div>
+
+    </div>
+
+    <!-- Right: Leave table -->
+    <div class="lg:col-span-2 space-y-4">
+      <div class="glass p-4 rounded-lg" data-aos="fade-up">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-white font-semibold">
+            {% if user.role == 'Employee' %}Your Leave Requests{% else %}Team Leave Requests{% endif %}
+          </h3>
+          <div class="text-sm text-slate-400">Manage and track status</div>
+        </div>
+
+        {% if leaves %}
+        <div class="overflow-x-auto">
+          <table class="w-full table-auto text-sm">
+            <thead class="text-slate-300 text-left">
+              <tr>
+                <th class="pb-2">#</th>
+                {% if user.role in ['Manager', 'Admin'] %}
+                <th class="pb-2">Employee</th>
+                {% endif %}
+                <th class="pb-2">From</th>
+                <th class="pb-2">To</th>
+                <th class="pb-2">Reason</th>
+                <th class="pb-2">Status</th>
+                <th class="pb-2">AI Suggestion</th>
+                <th class="pb-2">Applied</th>
+                <th class="pb-2 text-center">Action</th>
+              </tr>
+            </thead>
+
+            <tbody class="text-slate-200">
+              {% for leave in leaves %}
+              <tr class="align-top odd:bg-[rgba(255,255,255,0.01)] hover:bg-[rgba(255,255,255,0.02)] transition-all">
+                <td class="py-3 pr-4">{{ loop.index }}</td>
+
+                {% if user.role in ['Manager', 'Admin'] %}
+                <td class="py-3 pr-4 font-medium text-slate-300">{{ leave.user.name if leave.user else 'N/A' }}</td>
+                {% endif %}
+
+                <td class="py-3 pr-4">{{ leave.start_date }}</td>
+                <td class="py-3 pr-4">{{ leave.end_date }}</td>
+                <td class="py-3 pr-4 max-w-xs truncate">{{ leave.reason }}</td>
+
+                <!-- STATUS -->
+                <td class="py-3 pr-4">
+                  {% if leave.status == 'Approved' %}
+                  <span class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-900 text-emerald-300">
+                    <i class="fa-solid fa-check"></i> Approved
+                  </span>
+                  {% elif leave.status == 'Rejected' %}
+                  <span class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-900 text-rose-300">
+                    <i class="fa-solid fa-xmark"></i> Rejected
+                  </span>
+                  {% else %}
+                  <span class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-900 text-amber-300 animate-pulse">
+                    <i class="fa-solid fa-clock"></i> Pending
+                  </span>
+                  {% endif %}
+                </td>
+
+                <!-- AI Suggestion -->
+                <td class="py-3 pr-4">
+                  {% if leave.ai_recommendation %}
+                    <div class="flex items-center gap-2 text-slate-300">
+                      <i class="fa-solid fa-robot text-slate-400"></i>
+                      {{ leave.ai_recommendation }}
+                    </div>
+                  {% else %}
+                    <span class="text-slate-500 italic">N/A</span>
+                  {% endif %}
+                </td>
+
+                <td class="py-3 pr-4">{{ leave.applied_on.strftime('%d-%b-%Y') }}</td>
+
+                <!-- ACTIONS -->
+<td class="py-3 pr-4">
+  <div class="flex items-center justify-center gap-3">
+
+    {% if user.role in ['Manager', 'Admin'] and leave.status == 'Pending' %}
+    
+      <!-- Approve -->
+      <a href="{{ url_for('approve', leave_id=leave.id) }}"
+         class="text-emerald-400 hover:text-emerald-300 hover:scale-110 transition"
+         title="Approve Request">
+        <i class="fa-solid fa-circle-check text-lg"></i>
+      </a>
+
+      <!-- Reject -->
+      <a href="{{ url_for('reject', leave_id=leave.id) }}"
+         class="text-red-400 hover:text-red-300 hover:scale-110 transition"
+         title="Reject Request">
+        <i class="fa-solid fa-circle-xmark text-lg"></i>
+      </a>
+
+    {% endif %}
+
+    {% if user.role == 'Admin' or (user.role == 'Employee' and leave.status == 'Pending' and leave.user_id == user.id) %}
+    
+      <!-- Delete -->
+      <form method="POST" action="{{ url_for('delete_leave', leave_id=leave.id) }}" onsubmit="return confirm('Delete this request?');">
+        <button type="submit"
+                class="text-rose-500 hover:text-rose-400 hover:scale-110 transition"
+                title="Delete Request">
+          <i class="fa-solid fa-trash-can text-lg"></i>
+        </button>
+      </form>
+
+    {% endif %}
+    
+    {% if leave.status != 'Pending' and user.role not in ['Manager', 'Admin'] %}
+      <span class="text-slate-600 text-xs">—</span>
+    {% endif %}
+
+  </div>
+</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="py-12 text-center text-slate-400">
+          <i class="fa-solid fa-folder-open fa-2x mb-3"></i>
+          <p>No leave requests found yet. Click apply to submit your first request.</p>
+          <a href="{{ url_for('apply_leave') }}" class="mt-4 inline-block px-4 py-2 rounded-md bg-gradient-to-r from-primary1 to-primary2 text-white">Apply Now</a>
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- Bottom: Small charts -->
+      <div class="glass p-4 rounded-lg grid grid-cols-1 md:grid-cols-2 gap-4" data-aos="fade-up" data-aos-delay="80">
+        <div>
+          <div class="text-sm text-slate-300 mb-2">Status distribution</div>
+          <canvas id="statusChart" height="200" class="max-h-[220px]"></canvas>
+        </div>
+        <div>
+          <div class="text-sm text-slate-300 mb-2">Recent requests</div>
+          <ul class="mt-3 space-y-2">
+            {% for leave in leaves[:5] %}
+            <li class="flex items-center justify-between">
+              <div class="text-sm">
+                <div class="font-medium text-white">
+                  {% if user.role in ['Manager', 'Admin'] %}
+                    {{ leave.user.name if leave.user else 'N/A' }} —
+                  {% endif %}
+                  {{ leave.start_date }} → {{ leave.end_date }}
+                </div>
+                <div class="text-xs text-slate-400 truncate max-w-md">{{ leave.reason }}</div>
+              </div>
+              <div class="text-xs">
+                {% if leave.status == 'Approved' %}
+                  <span class="text-emerald-300">Approved</span>
+                {% elif leave.status == 'Rejected' %}
+                  <span class="text-rose-300">Rejected</span>
+                {% else %}
+                  <span class="text-amber-300">Pending</span>
+                {% endif %}
+              </div>
+            </li>
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<div id="chart-data"
+     data-approved="{{ leaves|selectattr('status','equalto','Approved')|list|length }}"
+     data-rejected="{{ leaves|selectattr('status','equalto','Rejected')|list|length }}"
+     data-pending="{{ leaves|selectattr('status','equalto','Pending')|list|length }}">
+</div>
+
+<script>
+  const chartDiv = document.getElementById('chart-data');
+  const approved = parseInt(chartDiv.dataset.approved || 0);
+  const rejected = parseInt(chartDiv.dataset.rejected || 0);
+  const pending = parseInt(chartDiv.dataset.pending || 0);
+
+  if (approved + rejected + pending > 0) {
+    const ctx = document.getElementById('statusChart').getContext('2d');
+    new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: ['Approved', 'Rejected', 'Pending'],
+        datasets: [{
+          data: [approved, rejected, pending],
+          backgroundColor: ['#10b981', '#ef4444', '#f59e0b'],
+          borderWidth: 0,
+          hoverOffset: 6
+        }]
+      },
+      options: {
+        plugins: {
+          legend: {
+            labels: { color: '#cbd5e1', font: { size: 13 } }
+          }
+        },
+        cutout: '70%',
+        maintainAspectRatio: false
+      }
+    });
+  }
+</script>
+{% endblock %}

@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en" class="bg-[#071029] text-slate-200">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{% block title %}Smart Leave Assistant{% endblock %}</title>
+
+  <!-- Tailwind -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary1: "#5B21B6",
+            primary2: "#8B5CF6",
+            glass: "rgba(255,255,255,0.06)"
+          },
+          boxShadow: {
+            'soft-lg': '0 10px 30px rgba(2,6,23,0.45)',
+            'glow': '0 8px 30px rgba(139,92,246,0.12)'
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- External Libraries -->
+  <link href="https://unpkg.com/aos@2.3.4/dist/aos.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://unpkg.com/@lottiefiles/lottie-player@1.5.7/dist/lottie-player.js"></script>
+  <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+  <style>
+    /* Fix flicker — set base dark background instantly */
+    html, body {
+      background-color: #071029 !important;
+      color: #e2e8f0; /* slate-200 */
+      transition: background-color 0.3s ease, color 0.3s ease;
+    }
+
+    .glass {
+      background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02));
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255,255,255,0.05);
+      border-radius: 14px;
+      box-shadow: 0 8px 30px rgba(2,6,23,0.45);
+    }
+
+    [x-cloak] {
+      display: none !important;
+    }
+  </style>
+
+  {% block head %}{% endblock %}
+</head>
+
+<body class="min-h-screen 
+             text-slate-200 
+             bg-gradient-to-b from-[#071029] via-[#0b1f2d] to-[#082233]
+             transition-colors duration-500 ease-in-out overflow-x-hidden">
+
+  <!-- Navbar -->
+  <header class="w-full py-4 px-4 md:px-8 relative z-[9999]">
+    <div class="max-w-7xl mx-auto flex items-center justify-between gap-4">
+
+      <!-- Logo -->
+      <a href="{{ url_for('dashboard') }}" class="flex items-center gap-3">
+        <img src="{{ url_for('static', filename='images/logo.png') }}" 
+             alt="Smart Leave Logo" 
+             class="w-10 h-10 rounded-lg shadow-glow hover:scale-[1.05] transition-all duration-200">
+        <div class="leading-tight">
+          <div class="font-semibold text-lg text-white">Smart Leave</div>
+          <div class="text-xs text-slate-300 -mt-1">Approval Assistant</div>
+        </div>
+      </a>
+
+      <!-- Search + Profile -->
+      <div class="flex items-center gap-3">
+        {% if request.endpoint not in ['login', 'register'] %}
+        <div class="hidden md:block">
+          <input type="search" 
+                 placeholder="Search leaves, reasons..." 
+                 class="px-3 py-2 rounded-lg text-slate-200 
+                        bg-[rgba(255,255,255,0.03)]
+                        placeholder:text-slate-400 
+                        outline-none focus:ring-2 focus:ring-indigo-500 transition" />
+        </div>
+        {% endif %}
+
+        {% if session.get('user_id') %}
+        <!-- Profile Dropdown -->
+        <div x-data="{ open: false }" class="relative">
+          <button @click="open = !open" 
+                  class="flex items-center gap-2 p-2 rounded-md glass hover:bg-[rgba(255,255,255,0.05)] transition">
+            <span class="w-8 h-8 bg-[rgba(255,255,255,0.06)] rounded-full flex items-center justify-center font-medium">
+              {{ (session.get('name') or 'U')[0]|upper }}
+            </span>
+            <div class="text-left hidden sm:block">
+              <div class="text-sm font-medium text-slate-200">{{ session.get('name') or 'User' }}</div>
+              <div class="text-xs text-slate-400">{{ session.get('role') or 'Employee' }}</div>
+            </div>
+            <i class="fa-solid fa-chevron-down text-xs text-slate-400 ml-1"></i>
+          </button>
+
+          <!-- Dropdown -->
+          <template x-teleport="body">
+            <div x-show="open"
+                 x-cloak
+                 @click.away="open = false"
+                 x-transition
+                 class="fixed right-6 top-16 w-56 rounded-lg 
+                        bg-[#0f172a]/95 backdrop-blur-xl border border-[rgba(255,255,255,0.08)] 
+                        shadow-2xl p-2"
+                 style="z-index: 999999 !important;">
+              <div class="px-3 py-2 text-xs text-slate-400 border-b border-[rgba(255,255,255,0.05)] mb-2">
+                {{ session.get('role', 'Employee') }}
+              </div>
+
+              <a href="{{ url_for('dashboard') }}" 
+                 class="block px-4 py-2.5 text-[15px] rounded-md text-slate-200 hover:bg-[rgba(255,255,255,0.06)] transition">
+                <i class="fa-solid fa-home text-[13px] mr-2"></i> Dashboard
+              </a>
+
+              <a href="{{ url_for('apply_leave') }}" 
+                 class="block px-4 py-2.5 text-[15px] rounded-md text-slate-200 hover:bg-[rgba(255,255,255,0.06)] transition">
+                <i class="fa-solid fa-paper-plane text-[13px] mr-2"></i> Apply Leave
+              </a>
+
+              {% if session.get('role') == 'Admin' %}
+              <a href="{{ url_for('admin_dashboard') }}" 
+                 class="block px-4 py-2.5 text-[15px] rounded-md text-slate-200 hover:bg-[rgba(255,255,255,0.06)] transition">
+                <i class="fa-solid fa-gear text-[13px] mr-2"></i> Admin Panel
+              </a>
+              {% endif %}
+
+              <a href="{{ url_for('change_password') }}" 
+                 class="block px-4 py-2.5 text-[15px] rounded-md text-slate-200 hover:bg-[rgba(255,255,255,0.06)] transition">
+                <i class="fa-solid fa-key text-[13px] mr-2"></i> Change Password
+              </a>
+
+              <div class="border-t border-[rgba(255,255,255,0.05)] my-2"></div>
+
+              <a href="{{ url_for('logout') }}" 
+                 class="block px-4 py-2.5 text-[15px] rounded-md text-rose-400 hover:bg-[rgba(255,255,255,0.06)] transition">
+                <i class="fa-solid fa-right-from-bracket text-[13px] mr-2"></i> Logout
+              </a>
+            </div>
+          </template>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </header>
+
+  <!-- Toasts -->
+  <div class="fixed top-20 right-6 z-[100000]">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="mb-3 animate__animated animate__fadeInRight">
+            <div class="px-4 py-3 rounded-lg glass">
+              <div class="flex items-center gap-3">
+                <div class="flex-1 text-sm">{{ message }}</div>
+                <button class="text-xs text-slate-400" onclick="this.parentElement.parentElement.remove()">Dismiss</button>
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+  </div>
+
+  <!-- Main Content -->
+  <main class="max-w-7xl mx-auto px-4 md:px-8 py-6 transition-all duration-500">
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- Footer -->
+  <footer class="mt-10 text-center text-slate-400 text-sm">
+    <div>
+      © {{ now().year if now is defined else '' }} Smart Leave Assistant · 
+      <a class="underline" href="#">Privacy</a>
+    </div>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="https://unpkg.com/aos@2.3.4/dist/aos.js"></script>
+  <script>
+    AOS.init({ duration: 700, once: true });
+  </script>
+  <script src="{{ url_for('static', filename='main.js') }}"></script>
+
+  {% block scripts %}{% endblock %}
+</body>
+</html>

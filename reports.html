@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% block title %}Leave Reports | Smart Leave Assistant{% endblock %}
+
+{% block content %}
+<div class="glass p-6 rounded-lg space-y-6" data-aos="fade-up">
+
+  <!-- Header -->
+  <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+    <h3 class="text-xl font-semibold text-white">Leave Reports</h3>
+    <div class="flex gap-3">
+      <!-- Filter Dropdown -->
+      <select id="filterStatus" 
+        class="px-3 py-2 rounded-md bg-[#1e293b]/80 border border-[rgba(255,255,255,0.08)] text-slate-200 text-sm 
+               focus:ring-2 focus:ring-indigo-500 outline-none focus:bg-[#1e293b]/90 hover:bg-[#1e293b]/90 transition">
+        <option value="all">All Statuses</option>
+        <option value="Approved">Approved</option>
+        <option value="Rejected">Rejected</option>
+        <option value="Pending">Pending</option>
+      </select>
+
+      <!-- Export Button -->
+      <button id="exportCSV" 
+        class="px-4 py-2 rounded-md bg-gradient-to-r from-primary1 to-primary2 text-white text-sm font-medium 
+               shadow-glow hover:scale-[1.02] transition">
+        <i class="fa-solid fa-download mr-1"></i> Export CSV
+      </button>
+    </div>
+  </div>
+
+  <!-- Summary Cards -->
+  <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+    <div class="p-3 rounded-md bg-[rgba(255,255,255,0.02)]">
+      <div class="text-xs text-slate-400">Total</div>
+      <div class="text-xl font-semibold text-white">{{ leaves|length }}</div>
+    </div>
+    <div class="p-3 rounded-md bg-[rgba(255,255,255,0.02)]">
+      <div class="text-xs text-slate-400">Approved</div>
+      <div class="text-xl font-semibold text-emerald-300">{{ leaves|selectattr('status','equalto','Approved')|list|length }}</div>
+    </div>
+    <div class="p-3 rounded-md bg-[rgba(255,255,255,0.02)]">
+      <div class="text-xs text-slate-400">Pending</div>
+      <div class="text-xl font-semibold text-amber-300">{{ leaves|selectattr('status','equalto','Pending')|list|length }}</div>
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div class="overflow-x-auto">
+    <table id="reportTable" class="w-full text-sm">
+      <thead class="text-slate-300 border-b border-[rgba(255,255,255,0.05)]">
+        <tr>
+          <th class="py-2 text-left">#</th>
+          {% if user.role in ['Manager', 'Admin'] %}
+            <th class="py-2 text-left">Employee</th>
+          {% endif %}
+          <th class="py-2 text-left">From</th>
+          <th class="py-2 text-left">To</th>
+          <th class="py-2 text-left">Reason</th>
+          <th class="py-2 text-left">Status</th>
+          <th class="py-2 text-left">Applied</th>
+        </tr>
+      </thead>
+
+      <tbody class="text-slate-200">
+        {% for leave in leaves %}
+        <tr class="row align-top odd:bg-[rgba(255,255,255,0.01)] hover:bg-[rgba(255,255,255,0.02)] transition-all">
+          <td class="py-2">{{ loop.index }}</td>
+
+          {% if user.role in ['Manager', 'Admin'] %}
+            <td class="py-2">{{ leave.user.name if leave.user else 'N/A' }}</td>
+          {% endif %}
+
+          <td class="py-2">{{ leave.start_date }}</td>
+          <td class="py-2">{{ leave.end_date }}</td>
+          <td class="py-2 max-w-xs truncate">{{ leave.reason }}</td>
+          <td class="py-2 status">
+            <span class="px-3 py-1 rounded-full {% if leave.status == 'Approved' %}bg-emerald-900 text-emerald-300{% elif leave.status == 'Rejected' %}bg-rose-900 text-rose-300{% else %}bg-amber-900 text-amber-300{% endif %}">
+              {{ leave.status }}
+            </span>
+          </td>
+          <td class="py-2">{{ leave.applied_on.strftime('%d-%b-%Y') }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="7" class="py-6 text-center text-slate-400">No leave records found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // === Filter Function ===
+  const filterSelect = document.getElementById('filterStatus');
+  const rows = document.querySelectorAll('#reportTable tbody tr');
+
+  filterSelect.addEventListener('change', () => {
+    const selected = filterSelect.value;
+    rows.forEach(row => {
+      const statusCell = row.querySelector('.status span');
+      if (!statusCell) return;
+      const status = statusCell.textContent.trim();
+      row.style.display = (selected === 'all' || status === selected) ? '' : 'none';
+    });
+  });
+
+  // === Export CSV Function ===
+  document.getElementById('exportCSV').addEventListener('click', () => {
+    const table = document.getElementById('reportTable');
+    let csv = [];
+    for (let row of table.querySelectorAll('tr')) {
+      const cols = Array.from(row.querySelectorAll('th, td')).map(col => `"${col.innerText.trim()}"`);
+      csv.push(cols.join(','));
+    }
+
+    const blob = new Blob([csv.join('\n')], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = 'leave_reports.csv';
+    link.click();
+  });
+</script>
+{% endblock %}
